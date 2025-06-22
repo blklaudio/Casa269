@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Virtual - Casa 269</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: Arial;
+        }
+        canvas { 
+            display: block; 
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        /* Controles modernos com botões +/- */
+        #controls {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 120px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            gap: 8px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: space-between;
+        }
+        .control-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: none;
+            background: #4a4a4a;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            background: #5a5a5a;
+        }
+        .control-value {
+            min-width: 40px;
+            text-align: center;
+            font-size: 14px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            padding: 5px;
+        }
+        #reset-btn {
+            background: #ff5555;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        #reset-btn:hover {
+            background: #ff3333;
+        }
+        .control-label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        /* Novo estilo para o toggle da luz do sol */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        /* Estilo do disco de cores */
+		/* CORREÇÃO PARA O DISCO DE CORES */
+        #colorWheel {
+           // position: absolute;
+            //bottom: 20px;
+            //right: 20px;
+            //width: 150px;
+           // height: 150px;
+            //border-radius: 50%;
+           // cursor: crosshair;
+           // box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+           // z-index: 100;
+            /* Novas propriedades */
+           // background: transparent;
+           // transform: translateZ(0); /* Melhora renderização */
+		    position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            cursor: crosshair;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            z-index: 1000; /* Garante que fique acima de tudo */
+            display: block !important; /* Força exibição */
+            pointer-events: auto; /* Permite interação */
+        }
+        /* Texto do objeto selecionado */
+         #selectedObject {
+            position: absolute;
+            bottom: 265px;
+            right: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            //pointer-events: none; /* Permite cliques através do elemento */
+			z-index: 1001; /* Acima do disco */
+        }
+		
+		[data-selected] {
+    outline: 2px solid #00ff00 !important;
+    outline-offset: 2px;
+}
+
+/* Estilos para o novo seletor */
+#colorPickerContainer {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    background: rgba(0,0,0,0.7);
+    padding: 15px;
+    border-radius: 10px;
+    z-index: 1000;
+}
+
+#colorSpectrum {
+    width: 100%;
+    height: 150px;
+    background: 
+        linear-gradient(to bottom, 
+            rgba(255,255,255,1),    /* Branco no topo */
+            rgba(255,255,255,0)),   /* Transparente na base */
+        linear-gradient(to right, 
+            #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+    border-radius: 5px;
+    cursor: crosshair;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+#luminositySlider {
+    width: 100%;
+    height: 10px;
+    background: linear-gradient(to right, #000, #fff);
+    border-radius: 5px;
+    position: relative;
+}
+
+#luminosityHandle {
+    width: 15px;
+    height: 15px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: -2.5px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+}
+
+#selectedColorPreview {
+    width: 100%;
+    height: 30px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid #fff;
+}
+
+#colorHexCode {
+    position: absolute;
+    bottom: 10px;  /* Ajuste conforme necessário */
+    right: 75px;
+    color: white;
+   /* background: rgba(0, 0, 0, 0.7);*/
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 16px;
+    min-width: 80px;
+    text-align: center;
+    z-index: 1001;
+}
+
+    </style>
+</head>
+<body>
+    <div id="info">
+        <b>Controles:</b><br>
+        WASD: Movimento<br>
+        Setas: Rotação<br>
+        Shift + Seta ↑: Subir<br>
+        Shift + Seta ↓: Descer
+    </div>
+
+    <!-- Controles com botões +/- -->
+    <div id="controls">
+        <div class="control-group">
+            <div class="control-label">Brilho</div>
+            <div class="control-row">
+                <button class="control-btn" id="brightness-down">-</button>
+                <div class="control-value" id="brightness-value">1.0</div>
+                <button class="control-btn" id="brightness-up">+</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="control-label">Contraste</div>
+            <div class="control-row">
+                <button class="control-btn" id="contrast-down">-</button>
+                <div class="control-value" id="contrast-value">1.0</div>
+                <button class="control-btn" id="contrast-up">+</button>
+            </div>
+        </div>
+        
+        <!-- Substituição: Saturação → Iluminação Ambiente -->
+        <div class="control-group">
+            <div class="control-label">Iluminação</div>
+            <div class="control-row">
+                <button class="control-btn" id="ambientLight-down">-</button>
+                <div class="control-value" id="ambientLight-value">1.0</div>
+                <button class="control-btn" id="ambientLight-up">+</button>
+            </div>
+        </div>
+        
+        <!-- Novo controle: Lente da Câmera (FOV) -->
+        <div class="control-group">
+            <div class="control-label">Lente (FOV)</div>
+            <div class="control-row">
+                <button class="control-btn" id="fov-down">-</button>
+                <div class="control-value" id="fov-value">55°</div>
+                <button class="control-btn" id="fov-up">+</button>
+            </div>
+        </div>
+        
+        <!-- Novo controle: Toggle da Luz do Sol -->
+        <div class="control-group">
+            <div class="control-label">Luz do Sol</div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="sun-toggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <button id="reset-btn">Resetar Tudo</button>
+    </div>
+    
+    <!-- Elementos adicionados para o disco de cores -->
+	<div id="colorHexCode">#FFFFFF</div>
+    <div id="selectedObject">Nenhum objeto selecionado</div>
+    <!--canvas id="colorWheel"></canvas--->
+	<div id="colorPickerContainer">
+    <div id="colorSpectrum"></div>
+    <div id="luminositySlider">
+        <div id="luminosityHandle"></div>
+    </div>
+    <div id="selectedColorPreview"></div>
+</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.11.4/dist/gsap.min.js"></script>
+
+    <script>
+			
+
+			
+        // 1. Configuração inicial
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Azul céu
+
+        // 2. Câmera com configurações otimizadas
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(6, 1.6, 5); // Posição inicial padrão
+        
+        // Sistema de rotação sem roll
+        const cameraRotation = {
+            yaw: 0,   // Rotação horizontal (esquerda/direita)
+            pitch: 0   // Rotação vertical (cima/baixo)
+        };
+        
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.NoToneMapping;
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+
+        // 3. Sistema de Efeitos (ATUALIZADO)
+        const effects = {
+            brightness: 1.0,
+            contrast: 1.0,
+            ambientLight: 1.0,  // Novo: controle de iluminação ambiente
+            fov: 55,            // Novo: campo de visão da câmera
+            step: {
+                brightness: 0.1,
+                contrast: 0.1,
+                ambientLight: 0.1, // Passo para iluminação
+                fov: 5            // Passo para FOV
+            },
+            min: {
+                brightness: 0.5,
+                contrast: 0.5,
+                ambientLight: 0.1, // Mínimo para iluminação
+                fov: 10           // Mínimo para FOV (lente fechada)
+            },
+            max: {
+                brightness: 1.5,
+                contrast: 1.5,
+                ambientLight: 2.0, // Máximo para iluminação
+                fov: 100          // Máximo para FOV (lente aberta)
+            },
+            originalMaterials: {},
+            originalLights: {}
+        };
+
+        // 4. Aplicação dos efeitos (ATUALIZADA)
+        function applyEffects() {
+            // Brilho (renderer + luzes)
+            renderer.toneMappingExposure = effects.brightness;
+            for (const lightId in effects.originalLights) {
+                const light = effects.originalLights[lightId].light;
+                light.intensity = effects.originalLights[lightId].intensity * effects.brightness;
+            }
+
+            // Iluminação ambiente (nova)
+            ambientLight.intensity = effects.originalLights.ambient.intensity * effects.ambientLight;
+            renderer.toneMappingExposure = effects.ambientLight;
+
+            // Contraste (materiais)
+            scene.traverse(child => {
+                if (child.isMesh && child.material && effects.originalMaterials[child.uuid]) {
+                    const original = effects.originalMaterials[child.uuid];
+                    const mat = child.material;
+                    
+                    // Aplica contraste
+                    mat.color.r = (original.color.r - 0.5) * effects.contrast + 0.5;
+                    mat.color.g = (original.color.g - 0.5) * effects.contrast + 0.5;
+                    mat.color.b = (original.color.b - 0.5) * effects.contrast + 0.5;
+                    
+                    mat.needsUpdate = true;
+                }
+            });
+
+            // Atualiza FOV da câmera (novo)
+            camera.fov = effects.fov;
+            camera.updateProjectionMatrix();
+
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            document.getElementById('brightness-value').textContent = effects.brightness.toFixed(1);
+            document.getElementById('contrast-value').textContent = effects.contrast.toFixed(1);
+            document.getElementById('ambientLight-value').textContent = effects.ambientLight.toFixed(1);
+            document.getElementById('fov-value').textContent = `${Math.round(effects.fov)}°`;
+        }
+
+        // 5. Configuração dos controles +/-
+        function setupControl(controlName) {
+            const upBtn = document.getElementById(`${controlName}-up`);
+            const downBtn = document.getElementById(`${controlName}-down`);
+            
+            upBtn.addEventListener('click', () => {
+                effects[controlName] = Math.min(
+                    effects[controlName] + effects.step[controlName],
+                    effects.max[controlName]
+                );
+                applyEffects();
+            });
+            
+            downBtn.addEventListener('click', () => {
+                effects[controlName] = Math.max(
+                    effects[controlName] - effects.step[controlName],
+                    effects.min[controlName]
+                );
+                applyEffects();
+            });
+        }
+
+        setupControl('brightness');
+        setupControl('contrast');
+        setupControl('ambientLight'); // Novo controle
+        setupControl('fov');          // Novo controle
+
+        // 6. Reset completo
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            gsap.to(effects, {
+                brightness: 1,
+                contrast: 1,
+                ambientLight: 1,
+                fov: 55,
+                duration: 0.5,
+                onUpdate: applyEffects
+            });
+        });
+
+        // 7. Iluminação (com armazenamento de valores originais)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        effects.originalLights.ambient = {
+            light: ambientLight,
+            intensity: 0.6
+        };
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 10);
+        directionalLight.castShadow = true;
+        effects.originalLights.directional = {
+            light: directionalLight,
+            intensity: 0.8
+        };
+        scene.add(directionalLight);
+
+        // 8. Toggle da Luz do Sol (novo)
+        document.getElementById('sun-toggle').addEventListener('change', (e) => {
+            directionalLight.visible = e.target.checked;
+        });
+
+        // 9. Carregamento do modelo
+        const loader = new THREE.GLTFLoader();
+        let collisionObjects = [];
+
+
+loader.load('Casa269_webColors.glb', (gltf) => {
+    const model = gltf.scene;
+    
+    // 1. Configuração automática de materiais
+    model.traverse((child) => {
+        if (child.isMesh) {
+            // Garante que cada mesh tenha um material
+            if (!child.material) {
+                child.material = new THREE.MeshStandardMaterial({
+                    color: Math.random() * 0xffffff,
+                    roughness: 0.7
+                });
+                console.log(`Material padrão aplicado em: ${child.name}`);
+            }
+            
+            // Ativa sombras
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            // Marca como selecionável
+            child.userData.selectable = true;
+        }
+    });
+
+    scene.add(model);
+    console.log("Modelo carregado com sucesso!", model);
+    
+}, undefined, (error) => {
+    console.error("Erro ao carregar modelo:", error);
+});
+
+
+        // 10. Controles de câmera
+        const keyStates = {};
+        document.addEventListener('keydown', (e) => keyStates[e.code] = true);
+        document.addEventListener('keyup', (e) => keyStates[e.code] = false);
+
+        const moveSpeed = 0.015;
+        const rotateSpeed = 0.005;
+        const verticalSpeed = 0.015;
+        const horizontalSpeed = 0.001;
+
+        function updateCameraRotation() {
+            camera.rotation.set(0, 0, 0);
+            camera.rotateY(cameraRotation.yaw);
+            camera.rotateX(cameraRotation.pitch);
+        }
+
+        // 11. Disco de cores HSV
+
+    // Disco de Cores (Atualizado)
+// Variáveis para o novo seletor
+let currentHue = 0;
+let currentSaturation = 1;
+let currentLuminosity = 0.5;
+
+function initColorPicker() {
+    const spectrum = document.getElementById('colorSpectrum');
+    const slider = document.getElementById('luminositySlider');
+    const handle = document.getElementById('luminosityHandle');
+    const preview = document.getElementById('selectedColorPreview');
+
+    // Interação com o espectro de cores
+    spectrum.addEventListener('mousedown', (e) => {
+        const rect = spectrum.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = 1 - (e.clientY - rect.top) / rect.height;
+        
+        currentHue = x;
+        currentSaturation = y < 0.5 ? 1 : 1 - (y - 0.5) * 2;
+        updateColor();
+        
+        const onMouseMove = (moveE) => {
+            const x = (moveE.clientX - rect.left) / rect.width;
+            const y = 1 - (moveE.clientY - rect.top) / rect.height;
+            
+            currentHue = Math.max(0, Math.min(1, x));
+            currentSaturation = Math.max(0, Math.min(1, y < 0.5 ? 1 : 1 - (y - 0.5) * 2));
+            updateColor();
+        };
+        
+        const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    });
+
+    // Interação com o slider de luminosidade
+    slider.addEventListener('mousedown', (e) => {
+        const rect = slider.getBoundingClientRect();
+        currentLuminosity = (e.clientX - rect.left) / rect.width;
+        updateColor();
+        
+        const onMouseMove = (moveE) => {
+            currentLuminosity = Math.max(0, Math.min(1, 
+                (moveE.clientX - rect.left) / rect.width));
+            updateColor();
+        };
+        
+        const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+        
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    });
+
+    function updateColor() {
+        // Atualiza a posição do handle
+        handle.style.left = `${currentLuminosity * 100}%`;
+        
+        // Calcula a cor final (HSL -> RGB)
+        const hue = currentHue * 360;
+        const saturation = currentSaturation;
+        const lightness = currentLuminosity;
+        
+        // Aplica ao objeto selecionado
+        if (selectedObject) {
+            selectedObject.material.color.setHSL(hue/360, saturation, lightness);
+            selectedObject.material.needsUpdate = true;
+        }
+        
+        // Atualiza a pré-visualização
+        preview.style.backgroundColor = `hsl(${hue}, ${saturation*100}%, ${lightness*100}%)`;
+		
+		//trecho acrescido que pode ser retirado:
+			// Converte HSL para hexadecimal
+			const hexColor = hslToHex(hue, saturation*100, lightness*100);
+			
+			// Atualiza a exibição do código hexadecimal
+			document.getElementById('colorHexCode').textContent = hexColor;
+			
+			// Aplica ao objeto 3D (código existente)
+			if (selectedObject) {
+				selectedObject.material.color.set(hexColor);
+				selectedObject.material.needsUpdate = true;
+			}
+		//fim
+		
+	}
+
+	// Função para converter HSL para Hexadecimal
+	function hslToHex(h, s, l) {
+		l /= 100;
+		const a = s * Math.min(l, 1 - l) / 100;
+		const f = n => {
+			const k = (n + h/30) % 12;
+			const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+			return Math.round(255 * color).toString(16).padStart(2, '0');
+		};
+		return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+	}
+
+
+}
+
+
+// Disco de Cores (Versão Antiga)
+	function initColorWheel() {
+		const canvas = document.getElementById("colorWheel");
+		const ctx = canvas.getContext("2d");
+		const size = 150;
+		const center = size/2;
+		const radius = size/2 - 5;
+
+		// Configuração de DPI
+		const dpi = window.devicePixelRatio;
+		canvas.width = size * dpi;
+		canvas.height = size * dpi;
+		canvas.style.width = size + "px";
+		canvas.style.height = size + "px";
+		ctx.scale(dpi, dpi);
+
+		// Desenha o disco
+		for(let angle = 0; angle < 360; angle += 1) {
+			const startAngle = (angle - 1) * Math.PI / 180;
+			const endAngle = angle * Math.PI / 180;
+			
+			ctx.beginPath();
+			ctx.moveTo(center, center);
+			ctx.arc(center, center, radius, startAngle, endAngle);
+			ctx.closePath();
+			
+			ctx.fillStyle = `hsl(${angle}, 100%, 50%)`;
+			ctx.fill();
+		}
+
+		// Eventos do disco - SOLUÇÃO CHAVE
+		canvas.addEventListener('mousedown', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			isColorWheelInteraction = true;
+			
+			if (selectedObject) {
+				handleColorPick(e);
+				
+				const onMouseMove = (moveEvent) => {
+					if (!isColorWheelInteraction) return;
+					handleColorPick(moveEvent);
+				};
+				
+				const onMouseUp = () => {
+				if (!isColorWheelInteraction) return; 
+					//isColorWheelInteraction = false;
+					window.removeEventListener('mousemove', onMouseMove);
+					window.removeEventListener('mouseup', onMouseUp);
+				};
+				
+				window.addEventListener('mousemove', onMouseMove);
+				window.addEventListener('mouseup', onMouseUp);
+			}
+		});
+
+		function handleColorPick(e) {
+			if (!selectedObject) return;
+			
+			const rect = canvas.getBoundingClientRect();
+			const x = e.clientX - rect.left - center;
+			const y = e.clientY - rect.top - center;
+			const distance = Math.sqrt(x*x + y*y);
+
+			if (distance <= radius) {
+				const angle = (Math.atan2(y, x) * 180/Math.PI + 360) % 360;
+				selectedObject.material.color.setHSL(angle/360, 1, 0.5);
+				selectedObject.material.needsUpdate = true;
+			}
+		}
+	}
+//fim colorwheel
+	// Seleção de Objetos (Versão Final)
+	function handleObjectSelection(event) {
+		// Ignora interações com o disco de cores
+		if (isColorWheelInteraction) return;
+		
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+		raycaster.setFromCamera(mouse, camera);
+		const intersects = raycaster.intersectObjects(scene.children, true);
+
+		if (intersects.length > 0) {
+			let selected = intersects[0].object;
+			while (selected.parent && !selected.isMesh) {
+				selected = selected.parent;
+			}
+
+			selectedObject = selected;
+			document.getElementById("selectedObject").textContent = 
+				`Selecionado: ${selected.name || "Objeto sem nome"}`;
+				
+			if (!selectedObject.material) {
+				selectedObject.material = new THREE.MeshStandardMaterial({
+					color: 0xffffff,
+					roughness: 0.7
+				});
+			}
+		} else {
+			// Só deseleciona se clicar em área vazia fora do disco
+			const colorWheel = document.getElementById('colorWheel');
+			const rect = colorWheel.getBoundingClientRect();
+			const x = event.clientX;
+			const y = event.clientY;
+			
+			if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+				selectedObject = null;
+				document.getElementById("selectedObject").textContent = "Nenhum objeto selecionado";
+			}
+		}
+	}
+//fim handleObject
+
+
+//fifin
+        // 2. SELEÇÃO DE OBJETOS (VERSÃO CONSOLIDADA)
+        let selectedObject = null;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+	//	let isInteractingWithColorWheel = false;
+		let isColorWheelInteraction = false;
+		
+        // 12. Seleção de objetos por clique
+
+        function onObjectClick(event) {
+            // Evita conflito com outros elementos
+            if (event.target.tagName !== 'CANVAS' && event.target !== renderer.domElement) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            if (intersects.length > 0) {
+                selectedObject = intersects[0].object;
+                
+                // Garante que temos um material válido
+                if (!selectedObject.material) {
+                    selectedObject.material = new THREE.MeshStandardMaterial({
+                        color: 0xffffff,
+                        roughness: 0.7
+                    });
+                }
+
+                // Atualiza a UI
+                document.getElementById("selectedObject").textContent = 
+                    `Selecionado: ${selectedObject.name || "Objeto sem nome"}`;
+                
+                console.log("Objeto selecionado:", selectedObject);
+            } else {
+                selectedObject = null;
+                document.getElementById("selectedObject").textContent = "Nenhum objeto selecionado";
+            }
+        }
+
+// fim2
+        window.addEventListener('click', onObjectClick, false);
+
+    // Seleção de Objetos (Atualizada)
+
+    // Seleção de Objetos (Versão Final)
+	function handleObjectSelection(event) {
+		// Ignora completamente cliques no disco
+		if (event.target.id === 'colorWheel') return;
+		
+		mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+		mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+		raycaster.setFromCamera(mouse, camera);
+		const intersects = raycaster.intersectObjects(scene.children, true);
+
+		if (intersects.length > 0) {
+			let selected = intersects[0].object;
+			while (selected.parent && !selected.isMesh) {
+				selected = selected.parent;
+			}
+
+			// Remove destaque do anterior
+			if (selectedObject) {
+				selectedObject.userData.originalMaterial = selectedObject.material.clone();
+			}
+			
+			selectedObject = selected;
+			document.getElementById("selectedObject").textContent = 
+				`Selecionado: ${selected.name || "Objeto sem nome"}`;
+				
+			if (!selectedObject.material) {
+				selectedObject.material = new THREE.MeshStandardMaterial({
+					color: 0xffffff,
+					roughness: 0.7
+				});
+			}
+		} else {
+			// Só deseleciona se clicar em área vazia
+			selectedObject = null;
+			document.getElementById("selectedObject").textContent = "Nenhum objeto selecionado";
+		}
+	}
+
+//fim3
+
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3();
+            right.crossVectors(new THREE.Vector3(0, 1, 0), forward);
+
+            if (keyStates['KeyW']) camera.position.add(forward.clone().multiplyScalar(moveSpeed));
+            if (keyStates['KeyS']) camera.position.add(forward.clone().multiplyScalar(-moveSpeed));
+            if (keyStates['KeyA']) camera.position.add(right.clone().multiplyScalar(moveSpeed));
+            if (keyStates['KeyD']) camera.position.add(right.clone().multiplyScalar(-moveSpeed));
+            
+            if (keyStates['ArrowLeft']) cameraRotation.yaw += rotateSpeed;
+            if (keyStates['ArrowRight']) cameraRotation.yaw -= rotateSpeed;
+            if (keyStates['ArrowDown'] && !keyStates['ShiftLeft']) {
+                cameraRotation.pitch = Math.max(-Math.PI/2, cameraRotation.pitch - rotateSpeed);
+            }
+            if (keyStates['ArrowUp'] && !keyStates['ShiftLeft']) {
+                cameraRotation.pitch = Math.min(Math.PI/2, cameraRotation.pitch + rotateSpeed);
+            }
+            
+            updateCameraRotation();
+           
+            if (keyStates['ShiftLeft'] && keyStates['ArrowUp']) camera.position.y += verticalSpeed;
+            if (keyStates['ShiftLeft'] && keyStates['ArrowDown']) camera.position.y -= verticalSpeed;
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 13. Redimensionamento
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+		
+        // 3. INICIALIZAÇÃO (CHAMAR NO FINAL DO CARREGAMENTO)
+		
+		function initApp() {
+        //    initColorWheel();  <<-obsoleto
+			initColorPicker();
+        // Usamos mousedown em vez de click para melhor controle
+			renderer.domElement.addEventListener('mousedown', handleObjectSelection);
+			console.log("Sistema de cores inicializado!");
+		}
+
+        // Chame isso após carregar seu modelo 3D
+        initApp();
+	
+    </script>
+</body>
+</html>
